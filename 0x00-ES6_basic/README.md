@@ -1,6 +1,6 @@
 # ALX Backend JavaScript: ES6 Basics
 
-This repository contains exercises and projects focused on the basics of ECMAScript 6 (ES6), a popular version of JavaScript used in modern web development. These materials are part of the ALX Backend JavaScript curriculum.
+This Directory contains exercises and projects focused on the basics of ECMAScript 6 (ES6), a popular version of JavaScript used in modern web development. These materials are part of the ALX Backend JavaScript curriculum.
 
 ## Table of Contents
 

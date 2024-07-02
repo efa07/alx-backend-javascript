@@ -9,7 +9,7 @@ Welcome to the 0x03. ES6 Data Manipulation project! This directory contains a se
 - [Usage](#usage)
 - [Author](#author)
 - [Description](#description)
-
+## Description
 This project covers various aspects of data manipulation in JavaScript using ES6 features. It includes tasks that will help you practice and master techniques such as working with arrays, objects, and other data structures. By completing these exercises, you'll improve your ability to handle and transform data in JavaScript effectively.
 
 ## Learning Objectives

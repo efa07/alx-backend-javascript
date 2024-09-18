@@ -1,40 +1,94 @@
 const http = require('http');
-const countStudents = require('./3-read_file_async');
+const fs = require('fs').promises; // Use promises-based fs API
 
-const app = http.createServer(async (req, res) => {
-  if (req.method === 'GET') {
-    if (req.url === '/') {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/plain');
-      res.end('Hello Holberton School!\n');
-    } else if (req.url === '/students') {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/plain');
-      res.write('This is the list of our students\n');
+const PORT = 1245;
+const HOST = 'localhost';
+const app = http.createServer();
+const DB_FILE = process.argv.length > 2 ? process.argv[2] : '';
 
-      try {
-        await countStudents('database.csv');
-      } catch (error) {
-        res.statusCode = 500;
-        res.end('Cannot load the database\n');
-        return;
+const countStudents = async (dataPath) => {
+  try {
+    const data = await fs.readFile(dataPath, 'utf-8');
+    const reportParts = [];
+    const fileLines = data.trim().split('\n');
+    const studentGroups = {};
+    const dbFieldNames = fileLines[0].split(',');
+    const studentPropNames = dbFieldNames.slice(0, dbFieldNames.length - 1);
+
+    for (const line of fileLines.slice(1)) {
+      const studentRecord = line.split(',');
+      const studentPropValues = studentRecord.slice(0, studentRecord.length - 1);
+      const field = studentRecord[studentRecord.length - 1];
+
+      if (!studentGroups[field]) {
+        studentGroups[field] = [];
       }
 
-      res.end();
-    } else {
-      res.statusCode = 404;
-      res.setHeader('Content-Type', 'text/plain');
-      res.end('Not Found\n');
+      const studentEntries = studentPropNames.map((propName, idx) => [
+        propName,
+        studentPropValues[idx],
+      ]);
+      studentGroups[field].push(Object.fromEntries(studentEntries));
     }
+
+    const totalStudents = Object.values(studentGroups).reduce(
+      (acc, cur) => acc + cur.length, 0,
+    );
+    reportParts.push(`Number of students: ${totalStudents}`);
+
+    for (const [field, group] of Object.entries(studentGroups)) {
+      reportParts.push(
+        `Number of students in ${field}: ${group.length}. List: ${group.map((student) => student.firstname).join(', ')}`
+      );
+    }
+
+    return reportParts.join('\n');
+  } catch (error) {
+    throw new Error('Cannot load the database');
+  }
+};
+
+const SERVER_ROUTE_HANDLERS = [
+  {
+    route: '/',
+    handler(_, res) {
+      const responseText = 'Hello Holberton School!\n';
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(responseText);
+    },
+  },
+  {
+    route: '/students',
+    async handler(_, res) {
+      const responseParts = ['This is the list of our students'];
+
+      try {
+        const report = await countStudents(DB_FILE);
+        responseParts.push(report);
+      } catch (err) {
+        responseParts.push(err.message);
+      }
+
+      const responseText = responseParts.join('\n')+'\n';
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(responseText);
+    },
+  },
+];
+
+app.on('request', (req, res) => {
+  const routeHandler = SERVER_ROUTE_HANDLERS.find((handler) => handler.route === req.url);
+
+  if (routeHandler) {
+    routeHandler.handler(req, res);
   } else {
-    res.statusCode = 405;
-    res.setHeader('Content-Type', 'text/plain');
-    res.end('Method Not Allowed\n');
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found\n');
   }
 });
 
-app.listen(1245, () => {
-  console.log('Server running at http://localhost:1245/');
+app.listen(PORT, HOST, () => {
+  console.log(`Server listening at http://${HOST}:${PORT}`);
 });
 
 module.exports = app;
